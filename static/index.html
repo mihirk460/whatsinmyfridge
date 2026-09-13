@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fridge</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 16px; background: #f6f6f6; }
+  h1 { margin: 0 0 12px; }
+  h2 { font-size: 1rem; color: #555; margin: 24px 0 8px; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input, button { font-size: 1rem; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+  input[type=text], input[type=date] { flex: 1; min-width: 120px; }
+  button { background: #222; color: #fff; border: 0; cursor: pointer; }
+  #search { width: 100%; margin-top: 12px; box-sizing: border-box; }
+  .item { background: #fff; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; }
+  .item.danger { border-left: 5px solid #d33; }
+  .name { font-weight: 600; }
+  .when { color: #777; font-size: .9rem; }
+  .danger .when { color: #d33; }
+  .item input[type=range] { width: 100%; grid-column: 1; }
+  .pct { font-size: .9rem; color: #555; min-width: 3.5em; }
+  .del { background: #eee; color: #c00; padding: 6px 12px; }
+  .empty { color: #999; font-style: italic; }
+</style>
+</head>
+<body>
+<h1>Fridge</h1>
+
+<form id="add">
+  <input type="text" id="name" name="name" placeholder="Item" required>
+  <input type="date" id="expiry" name="expiry" required>
+  <button>Add</button>
+</form>
+<input type="search" id="search" placeholder="Search…">
+
+<h2>Use soon (≤ 3 days)</h2>
+<div id="soon"></div>
+<h2>Everything else</h2>
+<div id="rest"></div>
+
+<script>
+let items = [];
+
+const api = (url, method = "GET", body) =>
+  fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) });
+
+async function load() {
+  items = await (await api("/api/items")).json();
+  render();
+}
+
+function daysLeft(expiry) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.round((new Date(expiry) - today) / 86400000);
+}
+
+function label(d) {
+  if (d < 0) return `expired ${-d} day${d === -1 ? "" : "s"} ago`;
+  if (d === 0) return "expires today";
+  return `in ${d} day${d === 1 ? "" : "s"}`;
+}
+
+function row(it) {
+  const d = daysLeft(it.expiry);
+  return `<div class="item ${d <= 3 ? "danger" : ""}">
+    <div><div class="name">${it.name}</div><div class="when">${it.expiry} · ${label(d)}</div></div>
+    <button class="del" data-id="${it.id}">Delete</button>
+    <input type="range" min="0" max="100" step="10" value="${it.percent}" data-id="${it.id}">
+    <span class="pct">${it.percent}% left</span>
+  </div>`;
+}
+
+function render() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const shown = items.filter(it => it.name.toLowerCase().includes(q));
+  const soon = shown.filter(it => daysLeft(it.expiry) <= 3);
+  const rest = shown.filter(it => daysLeft(it.expiry) > 3);
+  document.getElementById("soon").innerHTML = soon.map(row).join("") || '<p class="empty">Nothing urgent</p>';
+  document.getElementById("rest").innerHTML = rest.map(row).join("") || '<p class="empty">Empty</p>';
+}
+
+document.getElementById("add").onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target;
+  await api("/api/items", "POST", { name: f.name.value, expiry: f.expiry.value });
+  e.target.reset();
+  load();
+};
+
+document.getElementById("search").oninput = render;
+
+document.body.addEventListener("click", async e => {
+  if (e.target.classList.contains("del")) {
+    await api(`/api/items/${e.target.dataset.id}`, "DELETE");
+    load();
+  }
+});
+
+document.body.addEventListener("change", async e => {
+  if (e.target.type === "range") {
+    await api(`/api/items/${e.target.dataset.id}`, "PATCH", { percent: +e.target.value });
+    load();
+  }
+});
+
+load();
+</script>
+</body>
+</html>
