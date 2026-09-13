@@ -1,0 +1,12 @@
+[Unit]
+Description=What's In My Fridge
+After=network.target
+
+[Service]
+User=mihirpi
+WorkingDirectory=/home/mihirpi/whatsinmyfridge
+ExecStart=/usr/bin/python3 /home/mihirpi/whatsinmyfridge/server.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
