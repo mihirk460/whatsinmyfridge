@@ -16,14 +16,12 @@ Stack: Python + Flask + SQLite, single HTML file. No build step.
 ```sh
 git clone https://github.com/mihirk460/whatsinmyfridge.git ~/whatsinmyfridge
 cd ~/whatsinmyfridge
-pip3 install flask
+pip3 install flask   # if this refuses (externally-managed-environment): sudo apt install python3-flask
 sudo cp fridge.service /etc/systemd/system/
 sudo systemctl enable --now fridge
 ```
 
-If your user isn't `pi`, edit `User=` and the paths in `fridge.service` first.
-
-Check it: `http://<pi-ip>:8000` on your home Wi-Fi.
+Check it on home Wi-Fi: `http://192.168.1.229:8000`
 
 ## Phone access from anywhere (Tailscale)
 

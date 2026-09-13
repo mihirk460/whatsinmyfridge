@@ -3,9 +3,9 @@ Description=What's In My Fridge
 After=network.target
 
 [Service]
-User=pi
-WorkingDirectory=/home/pi/whatsinmyfridge
-ExecStart=/usr/bin/python3 /home/pi/whatsinmyfridge/server.py
+User=mihirpi
+WorkingDirectory=/home/mihirpi/whatsinmyfridge
+ExecStart=/usr/bin/python3 /home/mihirpi/whatsinmyfridge/server.py
 Restart=always
 
 [Install]
